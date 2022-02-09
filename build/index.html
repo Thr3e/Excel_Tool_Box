@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link href="favicon.ico" rel="shortcut icon">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Tool Box</title>
+<script defer src="main.js"></script><link href="style/dist.css" rel="stylesheet"></head>
+
+<body>
+    <h1 id="title">
+        <i class="logo"></i>
+        Excel Tool
+    </h1>
+
+    <div class="main-body">
+
+        <div class="tool-box" id="mergeBox">
+            <p class="line title">合并Sheet页</p>
+            <div class="line file-line">
+                <input type="text" class="file-name" placeholder="请选择文件" style="height: 28px;">
+                <a href="javascript:;" class="file-input">
+                    选择文件
+                    <input type="file" name="excel" id="fileInput">
+                </a>
+                <i class="loader icon" style="display: none;"></i>
+                <i class="complit icon" style="display: none;"></i>
+                <i class="error icon" style="display: none;"></i>
+            </div>
+            <div class="line option-line">
+                <label for="effect-dataline">第一行有效数据位于第</label>
+                <input type="number" name="effect-dataline" id="effectData" style="width: 2.5rem;">
+                行
+            </div>
+            <div class="btn-line">
+                <button id="mergeBtn" class='confirm-btn'>合并</button>
+            </div>
+
+        </div>
+
+        <div class="tool-box" id="countBox">
+            <p class="line title">人员统计</p>
+            <div class="line file-line">
+                <input type="text" class="file-name" placeholder="请选择文件" style="height: 28px;">
+                <a href="javascript:;" class="file-input">
+                    选择文件
+                    <input type="file" name="excel" id="fileInput">
+                </a>
+                <i class="loader icon" style="display: none;"></i>
+                <i class="complit icon" style="display: none;"></i>
+                <i class="error icon" style="display: none;"></i>
+            </div>
+            <div class="line option-line">
+                <label for="effect-dataline">第一行有效数据位于第</label>
+                <input type="number" name="effect-dataline" id="effectData" style="width: 2.5rem;">
+                行
+            </div>
+            <div class="line option-line">
+                <label for="compare-dataline">依次输入关键数据列</label>
+                <input type="text" name="compare-dataline" id="compareLine" class="compare-dataline">
+                <span class="tips">（大写字母）</span>
+            </div>
+            <div class="line option-line">
+                <p class="tips" style="margin: 0;">按照：聘任专业技术职务名称、个人身份、技术职务级别的顺序，并以空格分开</p>
+            </div>
+            <div class="btn-line">
+                <button id="countBtn" class='confirm-btn'>统计</button>
+            </div>
+
+        </div>
+        
+        <div class="tool-box" id="compireBox">
+            <p class="line title">对比列表项</p>
+            <div class="compare-box">
+                <div class="box-1" id="compare1">
+                    <div class="line file-line">
+                        <input type="text" class="file-name" placeholder="文件一" style="height: 28px;">
+                        <a href="javascript:;" class="file-input">
+                            选择文件
+                            <input type="file" name="excel" id="fileInput">
+                        </a>
+                        <i class="loader icon" style="display: none;"></i>
+                        <i class="complit icon" style="display: none;"></i>
+                        <i class="error icon" style="display: none;"></i>
+                    </div>
+                    <div class="line option-line">
+                        <label for="effect-dataline">第一行有效数据位于第</label>
+                        <input type="number" name="effect-dataline" id="effectData" style="width: 2.5rem;">
+                        行
+                    </div>
+                    <div class="line option-line">
+                        <label for="effect-dataline">需要对比的数据位于第</label>
+                        <input type="text" name="effect-dataline" id="effectLine" style="width: 2.5rem;">
+                        列<span class="tips">（大写字母）</span>
+                    </div>
+                    <div class="line option-line">
+                        <label for="compare-dataline">可作为对比依据的列数</label>
+                        <input type="text" name="compare-dataline" id="compareLine" class="compare-dataline">
+                    </div>
+                </div>
+                <div class="splite"></div>
+                <div class="box-2" id="compare2">
+                    <div class="line file-line">
+                        <input type="text" class="file-name" placeholder="文件二" style="height: 28px;">
+                        <a href="javascript:;" class="file-input">
+                            选择文件
+                            <input type="file" name="excel" id="fileInput">
+                        </a>
+                        <i class="loader icon" style="display: none;"></i>
+                        <i class="complit icon" style="display: none;"></i>
+                        <i class="error icon" style="display: none;"></i>
+                    </div>
+                    <div class="line option-line">
+                        <label for="effect-dataline">第一行有效数据位于第</label>
+                        <input type="number" name="effect-dataline" id="effectData" style="width: 2.5rem;">
+                        行
+                    </div>
+                    <div class="line option-line">
+                        <label for="effect-dataline">需要对比的数据位于第</label>
+                        <input type="text" name="effect-dataline" id="effectLine" style="width: 2.5rem;">
+                        列<span class="tips">（大写字母）</span>
+                    </div>
+                    <div class="line option-line">
+                        <label for="compare-dataline">可作为对比依据的列数</label>
+                        <input type="text" name="compare-dataline" id="compareLine" class="compare-dataline">
+                    </div>
+                </div>
+            </div>
+            <div class="line option-line">
+                <p class="tips" style="margin: 0;">存在多列作为对比依据时，可以以空格分隔每一列标号，请保证两个文件作为依据的列数一一对应</p>
+            </div>
+            <div class="btn-line">
+                <button id="compareBtn" class='confirm-btn'>对比</button>
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>
