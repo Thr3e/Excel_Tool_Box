@@ -50,7 +50,7 @@ body {
 }
 .main-body {
   margin: 0 auto;
-  height: 700px;
+  height: 1200px;
   width: 1000px;
   display: flex;
   justify-content: flex-start;
@@ -144,6 +144,9 @@ body {
   outline: 0;
   border: 0;
   border-bottom: 1px solid #9D9D9D;
+}
+.main-body .tool-box #TableHeaderInfo {
+  padding-left: 2rem;
 }
 .main-body .tool-box .btn-line {
   width: 100%;

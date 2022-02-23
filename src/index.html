@@ -58,14 +58,13 @@
                 行
             </div>
             <div class="line option-line">
-                <label for="compare-dataline">依次输入关键数据列</label>
-                <input type="text" name="compare-dataline" id="compareLine" class="compare-dataline">
-                <span class="tips">（大写字母）</span>
+                <label for="effect-dataline">表头信息位于第</label>
+                <input type="number" name="effect-dataline" id="headerLine" style="width: 2.5rem;">
+                行
             </div>
-            <div class="line option-line">
-                <p class="tips" style="margin: 0;">按照：聘任专业技术职务名称、个人身份、技术职务级别的顺序，并以空格分开</p>
-            </div>
+            <div id="TableHeaderInfo"></div>
             <div class="btn-line">
+                <button id="checkBtn" class='confirm-btn'>检查</button>
                 <button id="countBtn" class='confirm-btn'>统计</button>
             </div>
 

@@ -3,8 +3,113 @@ import $ from 'jquery';
 import FileDownload from './fileDownload'
 import Tool from './mathTool'
 
+
+const STAFF_KEY = {
+  inner: "四川省人民医院",
+  security: "保卫部"
+}
+
+class TableHeader {
+  constructor() {
+    this.inout = undefined;
+    this.proLevel = undefined;
+    this.sex = undefined;
+    this.degree = undefined;
+    this.staffName = undefined;
+    this.staffLevel = undefined;
+    this.proName = undefined;
+    this.workerLevel = undefined;
+    this.jobName = undefined;
+    this.jobLevel = undefined;
+    this.department = undefined;
+    this.engagedPro = undefined;
+  }
+  hasEmptyValue() {
+    for (const key in this) {
+      if (Object.hasOwnProperty.call(this, key)) {
+        const element = this[key];
+        if (!element) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+}
+const tableLineTranslater = {
+
+  // 编制
+  "单位": "inout",
+  "inout": "单位",
+  "性别": "sex",
+  "sex": "性别",
+  "学位": "degree",
+  "degree": "学位",
+
+  // 管理
+  "职务名称": "staffName",
+  "staffName": "职务名称",
+  "职员等级": "staffLevel",
+  "staffLevel": "职员等级",
+
+  // 专技
+  "聘任专业技术职务名称": "proName",
+  "proName": "聘任专业技术职务名称",
+  "技术职务级别": "proLevel",
+  "proLevel": "技术职务级别",
+
+  // 工勤
+  "工人技术等级名称": "workerLevel",
+  "workerLevel": "工人技术等级名称",
+  "受聘岗位名称": "jobName",
+  "jobName": "受聘岗位名称",
+  "受聘岗位等级": "jobLevel",
+  "jobLevel": "受聘岗位等级",
+
+  // 安保
+  "部门": "department",
+  "department": "部门",
+  "现从事专业": "engagedPro",
+  "engagedPro": "现从事专业",
+}
+
+const totalCounter = {
+  total: 0,
+  manager: 0,
+  doubleSize: 0,
+  professional: 0,
+  worker: 0,
+  female: 0,
+  master: 0,
+  phd: 0,
+
+}
+
+const proStaffCount = {
+  doc: 0,
+  other: 0,
+  total: 0
+}
+
+const workStaffCount = {
+  normal: 0,
+  pro: 0,
+  total: 0
+}
+
+const securyStaffCount = {
+  "保安": 0,
+  "内保": 0,
+  "车管员": 0,
+  "特勤": 0,
+  "收费员": 0,
+  "消防监控员": 0,
+  "管理人员": 0
+}
+
 const workTypeOrder = ['doc', 'nurse', 'phar', 'worker', 'others'];
 const levelsOrder = ["level0", "level1", "level2", "level3", "level4"];
+
 const workType = {
   doc: {
     title: "医生",
@@ -60,7 +165,6 @@ class WorkCount {
     }
   }
 }
-
 class InOutType {
   constructor(isInner) {
     this.isInner = isInner;
@@ -73,86 +177,322 @@ class InOutType {
   }
 }
 
+const professionalStaff = {
 
+  innerStaff: new InOutType(true),
+  outterStaff: new InOutType(false),
+}
 class StaffCount {
   constructor(reader) {
     this.reader = reader;
+    $('#checkBtn').on('click', () => { this.getDataLine() })
     $('#countBtn').on('click', () => { this.countData() })
   }
 
-  countData() {
+  checkFile() {
     if (!this.reader.effectData) {
       alert("请输入有效数据起始行数");
-      return;
+      return false;
     }
-    if (!this.reader.compareLine) {
-      alert("请输入关键统计数据列数");
-      return;
+    if (!this.reader.headerLine) {
+      alert("请输入表头所在行数");
+      return false;
     }
     if (!this.reader.fileValue) {
       alert("请上传文件");
-      return;
+      return false;
     }
+    return true;
+  }
 
-    const effectData = this.reader.effectData;
+  getDataLine() {
+    if (!this.checkFile()) return;
+    const headerLine = this.reader.headerLine * 1;
     const fileValue = this.reader.fileValue;
-    const [workLine, inoutLine, levelLine] = this.reader.compareLine.match(/\w+/g)
+    const tableLine = new TableHeader
 
-    const lineIdx = effectData * 1;
-    const innerStaff = new InOutType(true);
-    const outterStaff = new InOutType(false);
     try {
       for (const key in fileValue.Sheets) {
         if (Object.hasOwnProperty.call(fileValue.Sheets, key)) {
           const sheet = fileValue.Sheets[key];
-          const [line, row] = Tool.getLineAndRow(sheet['!ref'], lineIdx);
-          if (line.indexOf(workLine) < 0 || line.indexOf(inoutLine) < 0 || line.indexOf(levelLine) < 0) {
-            alert("关键统计数据列数有误，请重新输入");
+          const [line, row] = Tool.getLineAndRow(sheet['!ref'], 0);
+          if (row.indexOf(headerLine) < 0) {
+            debugger
+            alert("表头所在行有误，请重新输入");
             return;
           }
-          row.forEach(r => {
-            if (!sheet[workLine + r] || !sheet[workLine + r].w) return;
-            const staff = sheet[inoutLine + r].w === "编内" ? innerStaff : outterStaff;
-            const wkey = this.getWorkTypeKey(sheet[workLine + r].w);
-            const lkey = this.getLevelKey(sheet[levelLine + r].w);
-            staff[wkey][lkey]++;
+          line.forEach(l => {
+            const tableName = this.translateTableName(sheet[l + headerLine].w);
+            tableName && (tableLine[tableName] = l);
           })
         }
       }
     } catch (e) {
       console.error(e)
     }
-    this.getCountResBlob(innerStaff, outterStaff);
+    this.setTableInfoToHtml(tableLine);
   }
 
-  getCountResBlob(inner, outter) {
-    const titleLines = [
-      ["专业技术人员构成"]
-    ]
-    const innerLines = this.getAOADataByObject(inner);
-    const OutterLines = this.getAOADataByObject(outter);
+  setTableInfoToHtml(info) {
+    if (!info) return;
+    const $header = $("#TableHeaderInfo");
 
-    const AOA = [].concat(titleLines, innerLines, OutterLines);
-    debugger
+    $header.html("");
+    for (const key in info) {
+      if (Object.hasOwnProperty.call(info, key)) {
+        const element = info[key];
+        const htmlStr = `
+          <div class="line option-line">
+            <label for="effect-dataline">${this.translateTableName(key)}   </label>
+            <input type="text" name="effect-dataline" data-keyword="${key}" value="${element ? element : ''}" style="width: 2.5rem;">
+              行
+          </div>
+        `
+        $header.append(htmlStr)
+      }
+    }
+  }
+
+  countData() {
+    if (!this.checkFile()) return;
+    const effectData = this.reader.effectData;
+    const fileValue = this.reader.fileValue;
+    const tableLine = this.getTableLine();
+
+    const lineIdx = effectData * 1;
+    try {
+      for (const key in fileValue.Sheets) {
+        if (Object.hasOwnProperty.call(fileValue.Sheets, key)) {
+          const sheet = fileValue.Sheets[key];
+          const [line, row] = Tool.getLineAndRow(sheet['!ref'], lineIdx);
+          if (this.checkLine(line, tableLine)) return;
+          row.forEach(r => {
+            const rowInfo = this.getRowInfoByHeader(sheet, tableLine, r);
+
+            // 总表
+            totalCounter.total++;
+            if (rowInfo.sex === "女") {
+              totalCounter.female++;
+            }
+            if (rowInfo.degree.indexOf("博士") > -1) {
+              totalCounter.phd++;
+            }
+            if (rowInfo.degree.indexOf("硕士") > -1) {
+              totalCounter.master++;
+            }
+
+            let isManager = false;
+            if (rowInfo.staffName && rowInfo.staffLevel) {
+              // 管理人员
+              totalCounter.manager++;
+              isManager = true;
+            }
+            if (rowInfo.proName) {
+              // 专技人员
+              totalCounter.professional++
+              isManager && totalCounter.doubleSize++;
+
+              const staff = rowInfo.inout === STAFF_KEY.inner ? professionalStaff.innerStaff : professionalStaff.outterStaff;
+              const wkey = this.getWorkTypeKey(rowInfo.proName);
+              const lkey = this.getLevelKey(rowInfo.proLevel);
+              staff[wkey][lkey]++;
+            }
+            if (!rowInfo.staffName && !rowInfo.staffLevel && !rowInfo.proName && !rowInfo.proLevel) {
+              // 工勤人员
+              workStaffCount.total++;
+              totalCounter.worker++
+              if (rowInfo.workerLevel === "" && rowInfo.jobName === "" && rowInfo.jobLevel === "") {
+                workStaffCount.normal++;
+              } else {
+                workStaffCount.pro++;
+              }
+            }
+
+            // 保卫部
+            if (rowInfo.department === STAFF_KEY.security) {
+              if (Object.hasOwnProperty.call(securyStaffCount, rowInfo.engagedPro)) {
+                securyStaffCount[rowInfo.engagedPro]++;
+              } else {
+                securyStaffCount['管理人员']++
+              }
+            }
+          })
+        }
+      }
+    } catch (e) {
+      console.error(e)
+      return;
+    }
+    this.getCountResBlob();
+  }
+
+  isSheetDataErrorInRow(sheet, data, r) {
+    for (const key in data) {
+      if (Object.hasOwnProperty.call(data, key)) {
+        const element = sheet[data[key] + r];
+        if (!element || typeof (element.w) !== 'string') return (data[key] + r)
+      }
+    }
+    return '';
+  }
+
+  getRowInfoByHeader(sheet, tableLine, r) {
+    const isErr = this.isSheetDataErrorInRow(sheet, tableLine, r);
+    if (isErr) {
+      alert(isErr + "单元格数据异常，请输入任意字符保存后重试")
+      throw (sheet[isErr]);
+    };
+    const data = new TableHeader();
+    for (const key in data) {
+      if (Object.hasOwnProperty.call(data, key)) {
+        data[key] = sheet[tableLine[key] + r].w;
+      }
+    }
+    return data;
+  }
+
+  checkLine(line, tableLine) {
+    if (!tableLine.hasEmptyValue || tableLine.hasEmptyValue()) {
+      alert("表头信息获取不全，请补全后再试");
+      return true;
+    }
+    for (const key in tableLine) {
+      if (Object.hasOwnProperty.call(tableLine, key)) {
+        if (line.indexOf(tableLine[key]) < 0) {
+          alert("关键统计数据列数有误，请重新输入");
+          return true;
+        }
+      }
+    }
+    return false
+  }
+
+  getTableLine() {
+
+    const tableLine = new TableHeader();
+    const $header = $("#TableHeaderInfo");
+    $header.find('input').each(function (i, n) {
+      let tableName = $(n).attr('data-keyword')
+      if (Object.hasOwnProperty.call(tableLine, tableName)) {
+        tableLine[tableName] = $(n).val();
+      }
+    });
+    return tableLine;
+  }
+
+  getCountResBlob() {
+    const totalInfo = this.getTotalInfo();
+    const staffInfo = this.getStaffInfo();
+    const proStaffInfo = this.getProStaffInfo();
+    const workStaffInfo = this.getWorkStaffInfo();
+    const securyStaffInfo = this.getSecuryStaffInfo();
+    const AOA = [
+      ...totalInfo, [], [],
+      ...staffInfo, [], [],
+      ...proStaffInfo, [], [],
+      ...workStaffInfo, [], [],
+      ...securyStaffInfo
+    ];
     const d = new FileDownload();
     this.sheet = d.AOA2Sheet(AOA);
     d.sheet2blob(this.sheet);
   }
 
+  getTotalInfo() {
+    return [
+      ["总表"],
+      ["", "合计"],
+      ["从业人数", totalCounter.total],
+      ["其中：专业技术人员数", totalCounter.professional],
+      ["管理人员", totalCounter.manager],
+      ["工勤人员", totalCounter.worker],
+      ["女职工", totalCounter.female],
+      ["博士", totalCounter.phd],
+      ["硕士", totalCounter.master],
+      ["双肩挑", totalCounter.doubleSize]
+    ]
+
+  }
+
+  getStaffInfo() {
+    const titleLines = [
+      ["专业技术人员构成"]
+    ]
+    const innerLines = this.getAOADataByObject(professionalStaff.innerStaff);
+    const OutterLines = this.getAOADataByObject(professionalStaff.outterStaff);
+    const staffData = this.mergeInout(innerLines, OutterLines);
+    return [].concat(titleLines, staffData);
+
+  }
+
+  getProStaffInfo() {
+    return [
+      ["专业技术人员总表"],
+      ["专业技术人员数", proStaffCount.total],
+      ["其中：卫计人员", proStaffCount.doc],
+      ["其他技术人员", proStaffCount.other]
+    ]
+
+  }
+  getWorkStaffInfo() {
+    return [
+      ["工勤人员构成总表"],
+      ["工勤人员", workStaffCount.total],
+      ["技术工", workStaffCount.pro],
+      ["普工", workStaffCount.normal]
+    ]
+  }
+
+  getSecuryStaffInfo() {
+    const res = [
+      ["本部保卫部人员统计表"],
+    ]
+    let total = 0;
+    for (const key in securyStaffCount) {
+      if (Object.hasOwnProperty.call(securyStaffCount, key)) {
+        const element = securyStaffCount[key];
+        res.push([key, element])
+        total += element * 1;
+      }
+    }
+    res.push(['总计', total])
+    return res;
+  }
+
+  mergeInout(inner, outter) {
+    return inner.map((item, idx) => {
+      let total;
+      if (idx === 1) {
+        total = "总计"
+      } else if (idx > 1) {
+        total = item[item.length - 1] + outter[idx][outter[idx].length - 1];
+        if (idx === 2) {
+          proStaffCount.doc = total;
+        } else if (idx === 7) {
+          proStaffCount.other = total;
+        } else if (idx === 8) {
+          proStaffCount.total = total;
+        }
+      }
+      outter[idx].shift();
+      return [...item, ...outter[idx], total]
+    })
+  }
+
   getAOADataByObject(obj) {
     const titleLines = [
-      [obj.isInner ? "编内" : "编外"],
+      ['', obj.isInner ? "编内" : "编外", '', '', '', '', ''],
       [""].concat(levelsOrder.map(l => levels[l].title), ['小计'])
     ];
     const dataLines = [];
     const totalCount = [0, 0, 0, 0, 0];
     workTypeOrder.forEach((wt, i) => {
       if (i === workTypeOrder.length - 1) {
-        const skillStaff = JSON.parse(JSON.stringify(totalCount));
-        const total = skillStaff.reduce((p, n) => p + n);
-        skillStaff.push(total);
-        skillStaff.unshift("卫生技术人员");
-        dataLines.unshift(skillStaff);
+        const proStaff = JSON.parse(JSON.stringify(totalCount));
+        const total = proStaff.reduce((p, n) => p + n);
+        proStaff.push(total);
+        proStaff.unshift("卫生技术人员");
+        dataLines.unshift(proStaff);
       }
       if (workType[wt].title !== obj[wt].workType) return;
       const line = [workType[wt].title];
@@ -167,7 +507,7 @@ class StaffCount {
     })
     const total = totalCount.reduce((p, n) => p + n);
     totalCount.push(total);
-    totalCount.unshift("总计");
+    totalCount.unshift("合计");
     dataLines.push(totalCount);
     return [].concat(titleLines, dataLines);
   }
@@ -194,6 +534,10 @@ class StaffCount {
       }
     }
     return "level4";
+  }
+
+  translateTableName(name) {
+    return tableLineTranslater[name];
   }
 }
 
