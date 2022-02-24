@@ -268,6 +268,7 @@ class StaffCount {
           if (this.checkLine(line, tableLine)) return;
           row.forEach(r => {
             const rowInfo = this.getRowInfoByHeader(sheet, tableLine, r);
+            if (!rowInfo) return;
 
             // 总表
             totalCounter.total++;
@@ -327,6 +328,10 @@ class StaffCount {
   }
 
   isSheetDataErrorInRow(sheet, data, r) {
+    if (!sheet[data.sex + r] || typeof (sheet[data.sex + r].w) !== 'string') {
+      // 空行
+      return "Empty Line"
+    }
     for (const key in data) {
       if (Object.hasOwnProperty.call(data, key)) {
         const element = sheet[data[key] + r];
@@ -339,6 +344,9 @@ class StaffCount {
   getRowInfoByHeader(sheet, tableLine, r) {
     const isErr = this.isSheetDataErrorInRow(sheet, tableLine, r);
     if (isErr) {
+      if (isErr === "Empty Line") {
+        return;
+      }
       alert(isErr + "单元格数据异常，请输入任意字符保存后重试")
       throw (sheet[isErr]);
     };
