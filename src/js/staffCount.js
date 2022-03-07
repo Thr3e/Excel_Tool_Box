@@ -23,6 +23,7 @@ class TableHeader {
     this.jobLevel = undefined;
     this.department = undefined;
     this.engagedPro = undefined;
+    this.identity = undefined;
   }
   hasEmptyValue() {
     for (const key in this) {
@@ -65,6 +66,8 @@ const tableLineTranslater = {
   "jobName": "受聘岗位名称",
   "受聘岗位等级": "jobLevel",
   "jobLevel": "受聘岗位等级",
+  "个人身份": "identity",
+  "identity": "个人身份",
 
   // 安保
   "部门": "department",
@@ -92,9 +95,12 @@ const proStaffCount = {
 }
 
 const workStaffCount = {
-  normal: 0,
-  pro: 0,
-  total: 0
+  inner_normal: 0,
+  inner_pro: 0,
+  outter_normal: 0,
+  outter_pro: 0,
+  inner_total: 0,
+  outter_total: 0
 }
 
 const securyStaffCount = {
@@ -113,19 +119,19 @@ const levelsOrder = ["level0", "level1", "level2", "level3", "level4"];
 const workType = {
   doc: {
     title: "医生",
-    key: "医"
+    key: /医(师|士)/g
   },
   nurse: {
     title: "护士",
-    key: "护"
+    key: /护(师|士|理)/g
   },
   phar: {
     title: "药剂人员",
-    key: "药"
+    key: /药(师|士|剂)/g
   },
   worker: {
     title: "医技人员",
-    key: "技"
+    key: /技(师|士)/g
   },
   others: {
     title: "其他技术人员",
@@ -283,13 +289,14 @@ class StaffCount {
             }
 
             let isManager = false;
-            if (rowInfo.staffName && rowInfo.staffLevel) {
-              // 管理人员
+            // 管理人员
+            if (rowInfo.staffLevel) {
               totalCounter.manager++;
               isManager = true;
             }
+
+            // 专技人员
             if (rowInfo.proName) {
-              // 专技人员
               totalCounter.professional++
               isManager && totalCounter.doubleSize++;
 
@@ -298,14 +305,28 @@ class StaffCount {
               const lkey = this.getLevelKey(rowInfo.proLevel);
               staff[wkey][lkey]++;
             }
-            if (!rowInfo.staffName && !rowInfo.staffLevel && !rowInfo.proName && !rowInfo.proLevel) {
-              // 工勤人员
-              workStaffCount.total++;
+
+            // 工勤人员
+            if (
+              !rowInfo.staffName && !rowInfo.staffLevel &&
+              !rowInfo.proName && !rowInfo.proLevel &&
+              rowInfo.identity.indexOf("工") >= 0
+            ) {
               totalCounter.worker++
-              if (rowInfo.workerLevel === "" && rowInfo.jobName === "" && rowInfo.jobLevel === "") {
-                workStaffCount.normal++;
+              if (rowInfo.inout === STAFF_KEY.inner) {
+                workStaffCount.inner_total++;
+                if (rowInfo.workerLevel === "未确定") {
+                  workStaffCount.inner_normal++;
+                } else {
+                  workStaffCount.inner_pro++;
+                }
               } else {
-                workStaffCount.pro++;
+                workStaffCount.outter_total++;
+                if (rowInfo.identity === "编外聘用普工") {
+                  workStaffCount.outter_normal++;
+                } else if (rowInfo.identity === "编外聘用技术工人") {
+                  workStaffCount.outter_pro++;
+                }
               }
             }
 
@@ -324,7 +345,7 @@ class StaffCount {
       console.error(e)
       return;
     }
-    this.getCountResBlob();
+    this.getBlob(this.getCountRes());
   }
 
   isSheetDataErrorInRow(sheet, data, r) {
@@ -388,22 +409,25 @@ class StaffCount {
     return tableLine;
   }
 
-  getCountResBlob() {
+  getCountRes() {
     const totalInfo = this.getTotalInfo();
     const staffInfo = this.getStaffInfo();
     const proStaffInfo = this.getProStaffInfo();
     const workStaffInfo = this.getWorkStaffInfo();
     const securyStaffInfo = this.getSecuryStaffInfo();
-    const AOA = [
+    return [
       ...totalInfo, [], [],
       ...staffInfo, [], [],
       ...proStaffInfo, [], [],
       ...workStaffInfo, [], [],
       ...securyStaffInfo
     ];
+  }
+
+  getBlob(AOA) {
     const d = new FileDownload();
-    this.sheet = d.AOA2Sheet(AOA);
-    d.sheet2blob(this.sheet);
+    const sheet = d.AOA2Sheet(AOA);
+    d.sheet2blob(sheet);
   }
 
   getTotalInfo() {
@@ -445,9 +469,9 @@ class StaffCount {
   getWorkStaffInfo() {
     return [
       ["工勤人员构成总表"],
-      ["工勤人员", workStaffCount.total],
-      ["技术工", workStaffCount.pro],
-      ["普工", workStaffCount.normal]
+      ["工勤人员", workStaffCount.inner_total, workStaffCount.outter_total],
+      ["技术工", workStaffCount.inner_pro, workStaffCount.outter_pro],
+      ["普工", workStaffCount.inner_normal, workStaffCount.outter_normal]
     ]
   }
 
@@ -524,7 +548,7 @@ class StaffCount {
     for (const wkey in workType) {
       if (Object.hasOwnProperty.call(workType, wkey)) {
         const element = workType[wkey];
-        if (element.key && label.indexOf(element.key) >= 0) {
+        if (element.key && label.match(element.key)) {
           return wkey;
         }
       }
